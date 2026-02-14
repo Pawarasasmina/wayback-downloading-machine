@@ -94,7 +94,40 @@ app.get("/", (req, res) => {
 <script>
   const form = document.getElementById("restoreForm");
   const overlay = document.getElementById("overlay");
-  form.addEventListener("submit", () => overlay.style.display = "flex");
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    overlay.style.display = "flex";
+    const formData = new FormData(form);
+    const data = new URLSearchParams();
+    for (let [key, value] of formData) {
+      data.append(key, value);
+    }
+    try {
+      const response = await fetch('/restore', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, 
+        body: data 
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText);
+      }
+      const blob = await response.blob();
+      const disposition = response.headers.get('Content-Disposition');
+      const filename = disposition ? disposition.split('filename=')[1].replace(/"/g, '') : 'site.zip';
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      document.querySelector('.box b').textContent = 'Done!';
+      setTimeout(() => overlay.style.display = 'none', 2000);
+    } catch (e) {
+      alert(e.message);
+      overlay.style.display = 'none';
+    }
+  });
 </script>
 </body>
 </html>`);
